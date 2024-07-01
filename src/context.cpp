@@ -56,15 +56,27 @@ bool Context::Init()
     glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
 
     // 이미지 생성
-    //auto image = Image::Load("./image/container.jpg");
-    //if (!image) 
-    //    return false;
-    //SPDLOG_INFO("image: {}x{}, {} channels", image->GetWidth(), image->GetHeight(), image->GetChannelCount());
+    auto image = Image::Load("./image/container.jpg");
+    if (!image) 
+        return false;
+    SPDLOG_INFO("image: {}x{}, {} channels", image->GetWidth(), image->GetHeight(), image->GetChannelCount());
 
-    auto image = Image::Create(512, 512);
-    image->SetCheckImage(16, 16);
- 
     m_texture = Texture::CreateFromImage(image.get());
+
+    auto image2 = Image::Load("./image/awesomeface.png");
+    m_texture2 = Texture::CreateFromImage(image2.get());
+
+    
+    glActiveTexture(GL_TEXTURE0);                       // 0번슬롯(GL_TEXTURE0) 선택 후
+    glBindTexture(GL_TEXTURE_2D, m_texture->Get());     // texture id (m_texture->Get())에 텍스처 오브젝트를 바인딩
+    
+    glActiveTexture(GL_TEXTURE1);                    // 1번슬롯(GL_TEXTURE1) 선택 후    
+    glBindTexture(GL_TEXTURE_2D, m_texture2->Get()); // 바인딩
+
+    m_program->Use();
+    // uniform 핸들(glGetUniformLocation)을 얻어와 uniform에 텍스처 슬롯 인덱스를 입력(glUniform1i)
+    glUniform1i(glGetUniformLocation(m_program->Get(), "tex"), 0);  // 0번(GL_TEXTURE0) 슬롯에 tex를 사용
+    glUniform1i(glGetUniformLocation(m_program->Get(), "tex2"), 1); // 1번(GL_TEXTURE1) 슬롯에 tex2를 사용 
 
     return true;
 }
