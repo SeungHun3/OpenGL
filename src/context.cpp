@@ -23,15 +23,14 @@ bool Context::Init()
     };
 
     // VAO생성
-    glGenVertexArrays(1, &m_vertexArrayObject);
-    glBindVertexArray(m_vertexArrayObject);
+    m_vertexLayout = VertexLayout::Create();
 
     // VBO생성
     m_vertexBuffer = Buffer::CreateWithData(GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices, sizeof(float) * 12 );
 
-    glEnableVertexAttribArray(0); // vertex attribute 중 n번째를 사용하도록 설정
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);// 사용하도록 한 n번째 attribute에 값을 사용하기위한 정의
-
+    // Layout 생성
+    m_vertexLayout->SetAttrib(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+    
     // 인덱스 버퍼(EBO) 생성
     m_indexBuffer = Buffer::CreateWithData(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, indices, sizeof(uint32_t) * 6);
 
