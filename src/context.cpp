@@ -58,17 +58,7 @@ bool Context::Init()
         return false;
     SPDLOG_INFO("image: {}x{}, {} channels", image->GetWidth(), image->GetHeight(), image->GetChannelCount());
 
-    // Texture 오브젝트 생성
-    glGenTextures(1, &m_texture);
-    glBindTexture(GL_TEXTURE_2D, m_texture);// GL_TEXTURE_2D 타입으로 texture바인딩 (uniform 미지정시 같은 타입 디폴트바인딩)
-    // filter 처리
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // wrapping s = x축, t = y축
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // cpu에 있는 데이터(image)를 gpu데이터(glTexImage2D)에 복사
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, image->GetWidth(), image->GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, image->GetData());
+    m_texture = Texture::CreateFromImage(image.get());
 
     return true;
 }
