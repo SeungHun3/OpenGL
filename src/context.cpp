@@ -47,17 +47,23 @@ bool Context::Init()
     SPDLOG_INFO("vertex shader id: {}", vertShader->Get());
     SPDLOG_INFO("fragment shader id: {}", fragShader->Get());
 
+    // 프로그램생성: shader Attach
     m_program = Program::Create({fragShader, vertShader});
     if (!m_program)
         return false;
     SPDLOG_INFO("program id: {}", m_program->Get());
 
     glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
-    auto image = Image::Load("./image/container.jpg");
-    if (!image) 
-        return false;
-    SPDLOG_INFO("image: {}x{}, {} channels", image->GetWidth(), image->GetHeight(), image->GetChannelCount());
 
+    // 이미지 생성
+    //auto image = Image::Load("./image/container.jpg");
+    //if (!image) 
+    //    return false;
+    //SPDLOG_INFO("image: {}x{}, {} channels", image->GetWidth(), image->GetHeight(), image->GetChannelCount());
+
+    auto image = Image::Create(512, 512);
+    image->SetCheckImage(16, 16);
+ 
     m_texture = Texture::CreateFromImage(image.get());
 
     return true;
