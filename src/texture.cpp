@@ -38,7 +38,7 @@ void Texture::CreateTexture()
     glGenTextures(1, &m_texture);
     // bind and set default filter and wrap option
     Bind();
-    SetFilter(GL_LINEAR, GL_LINEAR);
+    SetFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 }
 
@@ -61,4 +61,5 @@ void Texture::SetTextureFromImage(const Image *image)
     }
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->GetWidth(), image->GetHeight(), 0, format, GL_UNSIGNED_BYTE, image->GetData());
+    glGenerateMipmap(GL_TEXTURE_2D);
 }
