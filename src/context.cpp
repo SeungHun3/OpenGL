@@ -30,7 +30,7 @@ bool Context::Init()
 
     // Layout 생성
     m_vertexLayout->SetAttrib(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
-    
+
     // 인덱스 버퍼(EBO) 생성
     m_indexBuffer = Buffer::CreateWithData(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, indices, sizeof(uint32_t) * 6);
 
@@ -45,6 +45,13 @@ bool Context::Init()
     if (!m_program)
         return false;
     SPDLOG_INFO("program id: {}", m_program->Get());
+
+    // uniform 변수를 shader코드에서 받아와서
+    auto loc = glGetUniformLocation(m_program->Get(), "unicolor");
+    // shader 프로그램 사용 명시
+    m_program->Use();
+    // 값을 채워줌
+    glUniform4f(loc, 0.0f, 1.0f, 0.0f, 1.0f);
 
     glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
 
