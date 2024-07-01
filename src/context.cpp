@@ -11,22 +11,23 @@ ContextUPtr Context::Create()
 bool Context::Init()
 {
     float vertices[] = {
-      0.5f, 0.5f, 0.0f, // top right
-      0.5f, -0.5f, 0.0f, // bottom right
-      -0.5f, -0.5f, 0.0f, // bottom left
-      -0.5f, 0.5f, 0.0f, // top left
+        0.5f, 0.5f, 0.0f,   // top right
+        0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f, // bottom left
+        -0.5f, 0.5f, 0.0f,  // top left
     };
 
-    uint32_t indices[] = { // note that we start from 0!
-      0, 1, 3, // first triangle
-      1, 2, 3, // second triangle
+    uint32_t indices[] = {
+        // note that we start from 0!
+        0, 1, 3, // first triangle
+        1, 2, 3, // second triangle
     };
 
     // VAO생성
     m_vertexLayout = VertexLayout::Create();
 
     // VBO생성
-    m_vertexBuffer = Buffer::CreateWithData(GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices, sizeof(float) * 12 );
+    m_vertexBuffer = Buffer::CreateWithData(GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices, sizeof(float) * 12);
 
     // Layout 생성
     m_vertexLayout->SetAttrib(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
@@ -62,6 +63,12 @@ void Context::Render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    static float time = 0.0f;
+    float t = sinf(time) * 0.5f + 0.5f;
+    auto loc = glGetUniformLocation(m_program->Get(), "unicolor");
     m_program->Use();
+    glUniform4f(loc, t * t, 2.0f * t * (1.0f - t), (1.0f - t) * (1.0f - t), 1.0f);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    time += 0.016f;
 }
