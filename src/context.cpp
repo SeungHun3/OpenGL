@@ -10,11 +10,11 @@ ContextUPtr Context::Create()
 
 bool Context::Init()
 {
-    float vertices[] = {
-        0.5f, 0.5f, 0.0f,   // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f, // bottom left
-        -0.5f, 0.5f, 0.0f,  // top left
+	float vertices[] = {
+    0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // top right, red
+    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right, green
+    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left, blue
+    -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f, // top left, yellow
     };
 
     uint32_t indices[] = {
@@ -27,16 +27,17 @@ bool Context::Init()
     m_vertexLayout = VertexLayout::Create();
 
     // VBO생성
-    m_vertexBuffer = Buffer::CreateWithData(GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices, sizeof(float) * 12);
+    m_vertexBuffer = Buffer::CreateWithData(GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices, sizeof(float) * 24);
 
     // Layout 생성
-    m_vertexLayout->SetAttrib(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+    m_vertexLayout->SetAttrib(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, 0); // vertex
+    m_vertexLayout->SetAttrib(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, sizeof(float) * 3); // color
 
     // 인덱스 버퍼(EBO) 생성
     m_indexBuffer = Buffer::CreateWithData(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, indices, sizeof(uint32_t) * 6);
 
-    ShaderPtr vertShader = Shader::CreateFromFile("./shader/simple.vs", GL_VERTEX_SHADER);
-    ShaderPtr fragShader = Shader::CreateFromFile("./shader/simple.fs", GL_FRAGMENT_SHADER);
+    ShaderPtr vertShader = Shader::CreateFromFile("./shader/per_vertex_color.vs", GL_VERTEX_SHADER);
+    ShaderPtr fragShader = Shader::CreateFromFile("./shader/per_vertex_color.fs", GL_FRAGMENT_SHADER);
     if (!vertShader || !fragShader)
         return false;
     SPDLOG_INFO("vertex shader id: {}", vertShader->Get());
@@ -47,12 +48,7 @@ bool Context::Init()
         return false;
     SPDLOG_INFO("program id: {}", m_program->Get());
 
-    // uniform 변수를 shader코드에서 받아와서
-    auto loc = glGetUniformLocation(m_program->Get(), "unicolor");
-    // shader 프로그램 사용 명시
-    m_program->Use();
-    // 값을 채워줌
-    glUniform4f(loc, 0.0f, 1.0f, 0.0f, 1.0f);
+
 
     glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
 
@@ -63,12 +59,6 @@ void Context::Render()
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    static float time = 0.0f;
-    float t = sinf(time) * 0.5f + 0.5f;
-    auto loc = glGetUniformLocation(m_program->Get(), "unicolor");
     m_program->Use();
-    glUniform4f(loc, t * t, 2.0f * t * (1.0f - t), (1.0f - t) * (1.0f - t), 1.0f);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    time += 0.016f;
 }
