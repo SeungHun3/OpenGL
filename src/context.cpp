@@ -78,8 +78,8 @@ bool Context::Init()
     glUniform1i(glGetUniformLocation(m_program->Get(), "tex"), 0);  // 0번(GL_TEXTURE0) 슬롯에 tex를 사용
     glUniform1i(glGetUniformLocation(m_program->Get(), "tex2"), 1); // 1번(GL_TEXTURE1) 슬롯에 tex2를 사용 
 
-    // matrix4 uniform 단위행렬로 사용
-    auto transform = glm::mat4(1.0f); 
+    // 단위행렬에 스케일링 적용
+    auto transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.3f, 0.2f, 0.0f));
     auto transformLoc = glGetUniformLocation(m_program->Get(), "transform");
     glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
