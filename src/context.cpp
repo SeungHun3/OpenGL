@@ -127,6 +127,16 @@ void Context::Render()
     m_program->Use();
 
     auto projection = glm::perspective(glm::radians(45.0f), (float)m_width / (float)m_height, 0.01f, 20.0f);
+
+    m_cameraFront = 
+        // 기본방향을 정해주고
+        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f) * 
+        // y축으로 yaw만큼 회전시킨 벡터를
+        glm::rotate(glm::mat4(1.0f), glm::radians(m_cameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
+        // 다시 x축으로 pitch만큼 회전시킨다
+        glm::rotate(glm::mat4(1.0f), glm::radians(m_cameraPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+
+
 	auto view = glm::lookAt(
         m_cameraPos,
         m_cameraPos + m_cameraFront,
@@ -163,7 +173,26 @@ void Context::ProcessInput(GLFWwindow* window)
         m_cameraPos += cameraSpeed * cameraUp;
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         m_cameraPos -= cameraSpeed * cameraUp;
-}   
+}
+
+void Context::MouseMove(double x, double y) 
+{
+    static glm::vec2 prevPos = glm::vec2((float)x, (float)y);
+    auto pos = glm::vec2((float)x, (float)y);
+    auto deltaPos = pos - prevPos;
+
+    const float cameraRotSpeed = 0.8f;
+    m_cameraYaw -= deltaPos.x * cameraRotSpeed;
+    m_cameraPitch -= deltaPos.y * cameraRotSpeed;
+
+    if (m_cameraYaw < 0.0f)   m_cameraYaw += 360.0f;
+    if (m_cameraYaw > 360.0f) m_cameraYaw -= 360.0f;
+
+    if (m_cameraPitch > 89.0f)  m_cameraPitch = 89.0f;
+    if (m_cameraPitch < -89.0f) m_cameraPitch = -89.0f;
+
+    prevPos = pos;    
+}
 
 void Context::Reshape(int width, int height) 
 {
