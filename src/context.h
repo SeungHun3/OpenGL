@@ -14,7 +14,8 @@ class Context
 public:
     static ContextUPtr Create();
     void Render();
-    void ProcessInput(GLFWwindow* window);
+    void ProcessInput(GLFWwindow *window);
+    void Reshape(int width, int height);
 
 private:
     Context() {}
@@ -31,6 +32,10 @@ private:
     glm::vec3 m_cameraPos{glm::vec3(0.0f, 0.0f, 3.0f)};
     glm::vec3 m_cameraFront{glm::vec3(0.0f, 0.0f, -1.0f)}; // 카메라가 타겟을 바라보는 방향
     glm::vec3 m_cameraUp{glm::vec3(0.0f, 1.0f, 0.0f)};
+
+    // window size
+    int m_width{WINDOW_WIDTH};
+    int m_height{WINDOW_HEIGHT};
 };
 
 #endif // __CONTEXT_H__

@@ -126,12 +126,11 @@ void Context::Render()
     
     m_program->Use();
 
-    auto projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.01f, 100.0f);
-    
-	  auto view = glm::lookAt(
-      m_cameraPos,
-      m_cameraPos + m_cameraFront,
-      m_cameraUp);
+    auto projection = glm::perspective(glm::radians(45.0f), (float)m_width / (float)m_height, 0.01f, 20.0f);
+	auto view = glm::lookAt(
+        m_cameraPos,
+        m_cameraPos + m_cameraFront,
+        m_cameraUp);
 
     for (size_t i = 0; i < cubePositions.size(); i++)
     {
@@ -145,7 +144,8 @@ void Context::Render()
     }
 }
 
-void Context::ProcessInput(GLFWwindow* window) {
+void Context::ProcessInput(GLFWwindow* window) 
+{
     const float cameraSpeed = 0.05f;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         m_cameraPos += cameraSpeed * m_cameraFront;
@@ -164,3 +164,10 @@ void Context::ProcessInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         m_cameraPos -= cameraSpeed * cameraUp;
 }   
+
+void Context::Reshape(int width, int height) 
+{
+    m_width = width;
+    m_height = height;
+    glViewport(0, 0, m_width, m_height);
+}
