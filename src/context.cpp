@@ -138,7 +138,7 @@ void Context::Render()
     
     m_program->Use();
 
-    auto projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.01f, 10.0f);
+    auto projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.01f, 100.0f);
     
     float angle = glfwGetTime() * glm::pi<float>() * 0.5f;
     auto x = sinf(angle) * 10.0f;
