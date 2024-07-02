@@ -145,17 +145,7 @@ void Context::Render()
     auto cameraTarget = glm::vec3(x, 0.0f, 0.0f);
     auto cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    auto cameraZ = glm::normalize(cameraPos - cameraTarget);
-    auto cameraX = glm::normalize(glm::cross(cameraUp, cameraZ));
-    auto cameraY = glm::cross(cameraZ, cameraX);
-
-    auto cameraMat = glm::mat4(
-      glm::vec4(cameraX, 0.0f),
-      glm::vec4(cameraY, 0.0f),
-      glm::vec4(cameraZ, 0.0f),
-      glm::vec4(cameraPos, 1.0f));
-
-    auto view = glm::inverse(cameraMat);
+    auto view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
 
     for (size_t i = 0; i < cubePositions.size(); i++)
     {
