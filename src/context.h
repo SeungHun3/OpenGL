@@ -14,6 +14,7 @@ class Context
 public:
     static ContextUPtr Create();
     void Render();
+    void ProcessInput(GLFWwindow* window);
 
 private:
     Context() {}
@@ -25,6 +26,11 @@ private:
     BufferUPtr m_indexBuffer;
     TextureUPtr m_texture;
     TextureUPtr m_texture2;
+
+    // camera parameter
+    glm::vec3 m_cameraPos{glm::vec3(0.0f, 0.0f, 3.0f)};
+    glm::vec3 m_cameraFront{glm::vec3(0.0f, 0.0f, -1.0f)}; // 카메라가 타겟을 바라보는 방향
+    glm::vec3 m_cameraUp{glm::vec3(0.0f, 1.0f, 0.0f)};
 };
 
 #endif // __CONTEXT_H__
