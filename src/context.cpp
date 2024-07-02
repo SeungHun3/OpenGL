@@ -99,9 +99,9 @@ bool Context::Init()
     glBindTexture(GL_TEXTURE_2D, m_texture2->Get()); // 바인딩
 
     m_program->Use();
-    // uniform 핸들(glGetUniformLocation)을 얻어와 uniform에 텍스처 슬롯 인덱스를 입력(glUniform1i)
-    glUniform1i(glGetUniformLocation(m_program->Get(), "tex"), 0);  // 0번(GL_TEXTURE0) 슬롯에 tex를 사용
-    glUniform1i(glGetUniformLocation(m_program->Get(), "tex2"), 1); // 1번(GL_TEXTURE1) 슬롯에 tex2를 사용 
+
+    m_program->SetUniform("tex", 0);    // 0번(GL_TEXTURE0) 슬롯에 tex를 사용 
+    m_program->SetUniform("tex2", 1);   // 1번(GL_TEXTURE1) 슬롯에 tex2를 사용 
 
     // x축으로 -55도 회전
     auto model = glm::rotate(glm::mat4(1.0f),
@@ -112,8 +112,8 @@ bool Context::Init()
     auto projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, /*near*/0.01f, /*far*/10.0f);
     auto transform = projection * view * model;
 
-    auto transformLoc = glGetUniformLocation(m_program->Get(), "transform");
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+	m_program->SetUniform("transform", transform);
+
 
     return true;
 }
