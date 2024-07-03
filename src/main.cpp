@@ -3,6 +3,8 @@
 #include <spdlog/spdlog.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 void OnFramebufferSizeChange(GLFWwindow *window, int width, int height)
 {
@@ -59,7 +61,7 @@ int main(int argc, const char **argv)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    
+
     // glfw 윈도우 생성, 실패하면 에러 출력후 종료
     SPDLOG_INFO("Create glfw window");
     auto window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME, nullptr, nullptr);
@@ -83,6 +85,14 @@ int main(int argc, const char **argv)
     auto glVersion = reinterpret_cast<const char *>(glGetString(GL_VERSION));
     SPDLOG_INFO("OpenGL context version: {}", glVersion);
 
+    // imgui 생성
+    auto imguiContext = ImGui::CreateContext();
+    ImGui::SetCurrentContext(imguiContext);
+    ImGui_ImplGlfw_InitForOpenGL(window, false);
+    ImGui_ImplOpenGL3_Init();
+    ImGui_ImplOpenGL3_CreateFontsTexture();
+    ImGui_ImplOpenGL3_CreateDeviceObjects();
+
     auto context = Context::Create();
     if (!context)
     {
@@ -104,11 +114,25 @@ int main(int argc, const char **argv)
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         context->ProcessInput(window);
         context->Render();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
     }
     context.reset();
+    
+    // imgui 메모리 반환
+    ImGui_ImplOpenGL3_DestroyFontsTexture();
+    ImGui_ImplOpenGL3_DestroyDeviceObjects();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext(imguiContext);
 
     glfwTerminate();
     return 0;
