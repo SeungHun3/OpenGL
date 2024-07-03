@@ -115,7 +115,7 @@ int main(int argc, const char **argv)
     {
         glfwPollEvents();
 
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplGlfw_NewFrame(); // 상태 Glfw업데이트바인딩
         ImGui::NewFrame();
 
         context->ProcessInput(window);
@@ -127,7 +127,7 @@ int main(int argc, const char **argv)
         glfwSwapBuffers(window);
     }
     context.reset();
-    
+
     // imgui 메모리 반환
     ImGui_ImplOpenGL3_DestroyFontsTexture();
     ImGui_ImplOpenGL3_DestroyDeviceObjects();
