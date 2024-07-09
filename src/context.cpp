@@ -133,6 +133,9 @@ void Context::Render()
             ImGui::ColorEdit3("light color", glm::value_ptr(m_lightColor));
             ImGui::ColorEdit3("object color", glm::value_ptr(m_objectColor));
             ImGui::SliderFloat("ambient strength", &m_ambientStrength, 0.0f, 1.0f);
+            ImGui::SliderFloat("specular strength", &m_specularStrength, 0.0f, 1.0f);
+            ImGui::DragFloat("specular shininess", &m_specularShininess, 1.0f, 1.0f, 256.0f);
+
         }
         ImGui::Checkbox("animation", &m_animation);
     }
@@ -188,10 +191,14 @@ void Context::Render()
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
     m_program->Use();
+    m_program->SetUniform("viewPos", m_cameraPos);
     m_program->SetUniform("lightPos", m_lightPos);
     m_program->SetUniform("lightColor", m_lightColor);
     m_program->SetUniform("objectColor", m_objectColor);
     m_program->SetUniform("ambientStrength", m_ambientStrength);
+    m_program->SetUniform("specularStrength", m_specularStrength);
+    m_program->SetUniform("specularShininess", m_specularShininess);
+
 
     for (size_t i = 0; i < cubePositions.size(); i++)
     {
