@@ -89,7 +89,7 @@ bool Context::Init()
     auto image2 = Image::Load("./image/awesomeface.png");
     m_texture2 = Texture::CreateFromImage(image2.get());
     m_material.diffuse = Texture::CreateFromImage(Image::Load("./image/container2.png").get());
-
+	m_material.specular = Texture::CreateFromImage(Image::Load("./image/container2_specular.png").get());
     
     glActiveTexture(GL_TEXTURE0);                       // 0번슬롯(GL_TEXTURE0) 선택 후
     glBindTexture(GL_TEXTURE_2D, m_texture->Get());     // texture id (m_texture->Get())에 텍스처 오브젝트를 바인딩
@@ -133,7 +133,6 @@ void Context::Render()
         } 
         if (ImGui::CollapsingHeader("material", ImGuiTreeNodeFlags_DefaultOpen)) 
         {
-            ImGui::ColorEdit3("m.specular", glm::value_ptr(m_material.specular));
             ImGui::DragFloat("m.shininess", &m_material.shininess, 1.0f, 1.0f, 256.0f);        
         }
 
@@ -193,11 +192,13 @@ void Context::Render()
     m_program->SetUniform("light.diffuse", m_light.diffuse);
     m_program->SetUniform("light.specular", m_light.specular);
     m_program->SetUniform("material.diffuse", 0);
-    m_program->SetUniform("material.specular", m_material.specular);
+    m_program->SetUniform("material.specular", 1);
     m_program->SetUniform("material.shininess", m_material.shininess);
 
     glActiveTexture(GL_TEXTURE0);
     m_material.diffuse->Bind();
+    glActiveTexture(GL_TEXTURE1);
+    m_material.specular->Bind();
 
     for (size_t i = 0; i < cubePositions.size(); i++)
     {
