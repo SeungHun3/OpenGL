@@ -128,7 +128,7 @@ void Context::Render()
         {
             ImGui::DragFloat3("l.position", glm::value_ptr(m_light.position), 0.01f);
             ImGui::DragFloat3("l.direction", glm::value_ptr(m_light.direction), 0.01f);
-            ImGui::DragFloat3("l.cutoff", &m_light.cutoff, 0.5f, 0.0f, 90.0f);
+            ImGui::DragFloat2("l.cutoff", glm::value_ptr(m_light.cutoff), 0.5f, 0.0f, 180.0f);
             ImGui::DragFloat3("l.distance", &m_light.distance, 0.5f, 0.0f, 3000.0f);
             ImGui::ColorEdit3("l.ambient", glm::value_ptr(m_light.ambient));
             ImGui::ColorEdit3("l.diffuse", glm::value_ptr(m_light.diffuse));
@@ -192,7 +192,9 @@ void Context::Render()
     m_program->SetUniform("viewPos", m_cameraPos);
     m_program->SetUniform("light.position", m_light.position);
     m_program->SetUniform("light.direction", m_light.direction);
-    m_program->SetUniform("light.cutoff", cosf(glm::radians(m_light.cutoff)));
+    m_program->SetUniform("light.cutoff",  glm::vec2(
+        cosf(glm::radians(m_light.cutoff[0])), 
+        cosf(glm::radians(m_light.cutoff[0] + m_light.cutoff[1]))));
     m_program->SetUniform("light.attenuation", GetAttenuationCoeff(m_light.distance));
     m_program->SetUniform("light.ambient", m_light.ambient);
     m_program->SetUniform("light.diffuse", m_light.diffuse);
