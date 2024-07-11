@@ -7,7 +7,8 @@ out vec4 fragColor;
 uniform vec3 viewPos;
 
 struct Light {
-    vec3 direction;
+    vec3 position;
+    vec3 attenuation;
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -25,7 +26,17 @@ void main() {
     vec3 texColor = texture2D(material.diffuse, texCoord).xyz;
     vec3 ambient = texColor * light.ambient;
  
-    vec3 lightDir = normalize(-light.direction);
+    float dist = length(light.position - position);
+    vec3 distPoly = vec3(1.0, dist, dist*dist); // 1 , d, d*d
+    // Attenuation Model 계산식
+    // 1 / ( Kc + Kl*d + Kq*(d*d) ) =>
+    // 1 /
+    // ( distPoly.x * x light.attenuation.x + 
+    //   distPoly.y * x light.attenuation.y + 
+    //   distPoly.z * x light.attenuation.z )
+
+    float attenuation = 1.0 / dot(distPoly, light.attenuation);
+    vec3 lightDir = (light.position - position) / dist;
     vec3 pixelNorm = normalize(normal);
     float diff = max(dot(pixelNorm, lightDir), 0.0);
     vec3 diffuse = diff * texColor * light.diffuse;
@@ -36,6 +47,6 @@ void main() {
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     vec3 specular = spec * specColor * light.specular;
  
-    vec3 result = ambient + diffuse + specular;
+    vec3 result = (ambient + diffuse + specular) * attenuation;
     fragColor = vec4(result, 1.0);
 }
