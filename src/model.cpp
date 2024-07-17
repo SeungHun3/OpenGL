@@ -19,6 +19,28 @@ bool Model::LoadByAssimp(const std::string &filename)
         SPDLOG_ERROR("failed to load model: {}", filename);
         return false;
     }
+
+    auto dirname = filename.substr(0, filename.find_last_of("/"));
+    auto LoadTexture = [&](aiMaterial *material, aiTextureType type) -> TexturePtr
+    {
+        if (material->GetTextureCount(type) <= 0)
+            return nullptr;
+        aiString filepath;
+        material->GetTexture(type, 0, &filepath);
+        auto image = Image::Load(fmt::format("{}/{}", dirname, filepath.C_Str()));
+        if (!image)
+            return nullptr;
+        return Texture::CreateFromImage(image.get());
+    };
+
+    for (uint32_t i = 0; i < scene->mNumMaterials; i++)
+    {
+        auto material = scene->mMaterials[i];
+        auto glMaterial = Material::Create();
+        glMaterial->diffuse = LoadTexture(material, aiTextureType_DIFFUSE);
+        glMaterial->specular = LoadTexture(material, aiTextureType_SPECULAR);
+        m_materials.push_back(std::move(glMaterial));
+    }
     // scene->mRootNode부터 재귀적으로 처리 = node tree
     ProcessNode(scene->mRootNode, scene);
     return true;
@@ -64,12 +86,15 @@ void Model::ProcessMesh(aiMesh *mesh, const aiScene *scene)
     }
 
     auto glMesh = Mesh::Create(vertices, indices, GL_TRIANGLES);
+    if (mesh->mMaterialIndex >= 0)
+        glMesh->SetMaterial(m_materials[mesh->mMaterialIndex]);
     m_meshes.push_back(std::move(glMesh));
 }
-void Model::Draw() const
+
+void Model::Draw(const Program* program) const
 {
     for (auto &mesh : m_meshes)
     {
-        mesh->Draw();
+        mesh->Draw(program);
     }
 }
