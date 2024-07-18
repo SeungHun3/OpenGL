@@ -29,6 +29,7 @@ private:
     ProgramUPtr m_simpleProgram;
     ProgramUPtr m_textureProgram;
     ProgramUPtr m_postProgram;
+    float m_gamma {1.0f};
 
     MeshUPtr m_box;
     MeshUPtr m_plane;
