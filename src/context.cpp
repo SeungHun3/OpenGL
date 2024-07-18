@@ -26,6 +26,10 @@ bool Context::Init()
     if (!m_textureProgram)
         return false;
 
+    m_postProgram = Program::Create("./shader/texture.vs", "./shader/invert.fs");
+    if (!m_postProgram)
+        return false;
+
     glClearColor(0.1f, 0.2f, 0.3f, 0.0f);
 
     TexturePtr darkGrayTexture = Texture::CreateFromImage(
@@ -204,12 +208,12 @@ void Context::Render()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    m_textureProgram->Use();
-    m_textureProgram->SetUniform("transform",
-                                glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 1.0f)));
+    m_postProgram->Use();
+    m_postProgram->SetUniform("transform",
+                                 glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 1.0f)));
     m_framebuffer->GetColorAttachment()->Bind();
-    m_textureProgram->SetUniform("tex", 0);
-    m_plane->Draw(m_textureProgram.get());
+    m_postProgram->SetUniform("tex", 0);
+    m_plane->Draw(m_postProgram.get());
 }
 
 void Context::ProcessInput(GLFWwindow *window)
