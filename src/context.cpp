@@ -208,12 +208,13 @@ void Context::Render()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    m_postProgram->Use();
-    m_postProgram->SetUniform("transform",
+    Program* program = sinf(glfwGetTime() * 6.0f) > 0.0f ? m_postProgram.get() : m_textureProgram.get();
+    program->Use();
+    program->SetUniform("transform",
                                  glm::scale(glm::mat4(1.0f), glm::vec3(2.0f, 2.0f, 1.0f)));
     m_framebuffer->GetColorAttachment()->Bind();
-    m_postProgram->SetUniform("tex", 0);
-    m_plane->Draw(m_postProgram.get());
+    program->SetUniform("tex", 0);
+    m_plane->Draw(program);
 }
 
 void Context::ProcessInput(GLFWwindow *window)
