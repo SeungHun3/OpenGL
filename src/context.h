@@ -26,11 +26,10 @@ private:
     bool Init();
     ProgramUPtr m_program;
     ProgramUPtr m_simpleProgram;
+    ProgramUPtr m_textureProgram;
 
     MeshUPtr m_box;
-
-    TextureUPtr m_texture;
-    TextureUPtr m_texture2;
+    MeshUPtr m_plane;    
 
     // animation
     bool m_animation{true};
@@ -55,7 +54,8 @@ private:
     // material parameter
     MaterialPtr m_planeMaterial;
     MaterialPtr m_box1Material;
-    MaterialPtr m_box2Material;
+    MaterialPtr m_box2Material;    
+    TexturePtr m_windowTexture;
 
     // camera parameter
     bool m_cameraControl{false};
