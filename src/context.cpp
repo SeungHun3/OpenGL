@@ -100,7 +100,7 @@ void Context::Render()
 
     m_program->Use();
 
-    auto projection = glm::perspective(glm::radians(45.0f), (float)m_width / (float)m_height, 0.01f, 20.0f);
+    auto projection = glm::perspective(glm::radians(45.0f), (float)m_width / (float)m_height, 0.5f, 20.0f);
 
     m_cameraFront =
         // 기본방향을 정해주고
