@@ -29,7 +29,7 @@ private:
     ProgramUPtr m_simpleProgram;
     ProgramUPtr m_textureProgram;
     ProgramUPtr m_postProgram;
-    float m_gamma {1.0f};
+    float m_gamma{1.0f};
 
     MeshUPtr m_box;
     MeshUPtr m_plane;
@@ -72,6 +72,10 @@ private:
     // framebuffer
     FramebufferUPtr m_framebuffer;
 
+    // cubemap
+    CubeTextureUPtr m_cubeTexture;
+    ProgramUPtr m_skyboxProgram;
+    
     // window size
     int m_width{WINDOW_WIDTH};
     int m_height{WINDOW_HEIGHT};
