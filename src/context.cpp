@@ -90,6 +90,8 @@ void Context::Render()
     }
     ImGui::End();
 
+    m_framebuffer->Bind();
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
@@ -177,9 +179,6 @@ void Context::Render()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK); // 앞면만 그리기
-
     m_textureProgram->Use();
     m_windowTexture->Bind();
     m_textureProgram->SetUniform("tex", 0);
@@ -197,6 +196,18 @@ void Context::Render()
     modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.4f, 0.5f, 6.0f));
     transform = projection * view * modelTransform;
     m_textureProgram->SetUniform("transform", transform);
+    m_plane->Draw(m_textureProgram.get());
+
+    Framebuffer::BindToDefault();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    m_textureProgram->Use();
+    m_textureProgram->SetUniform("transform",
+                                glm::rotate(glm::mat4(1.0f), glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
+                                glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 1.0f)));
+    m_framebuffer->GetColorAttachment()->Bind();
+    m_textureProgram->SetUniform("tex", 0);
     m_plane->Draw(m_textureProgram.get());
 }
 
@@ -270,4 +281,6 @@ void Context::Reshape(int width, int height)
     m_width = width;
     m_height = height;
     glViewport(0, 0, m_width, m_height);
+
+    m_framebuffer = Framebuffer::Create(Texture::Create(width, height, GL_RGBA));
 }

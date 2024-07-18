@@ -8,6 +8,15 @@ TextureUPtr Texture::CreateFromImage(const Image *image)
     return std::move(texture);
 }
 
+TextureUPtr Texture::Create(int width, int height, uint32_t format)
+{
+    auto texture = TextureUPtr(new Texture());
+    texture->CreateTexture();
+    texture->SetTextureFormat(width, height, format);
+    texture->SetFilter(GL_LINEAR, GL_LINEAR);
+    return std::move(texture);
+}
+
 Texture::~Texture()
 {
     if (m_texture)
@@ -25,6 +34,15 @@ void Texture::SetFilter(uint32_t minFilter, uint32_t magFilter) const
 {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+}
+
+void Texture::SetTextureFormat(int width, int height, uint32_t format)
+{
+    m_width = width;
+    m_height = height;
+    m_format = format;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, m_format, GL_UNSIGNED_BYTE, nullptr);
 }
 
 void Texture::SetWrap(uint32_t sWrap, uint32_t tWrap) const
@@ -59,7 +77,10 @@ void Texture::SetTextureFromImage(const Image *image)
         format = GL_RGB;
         break;
     }
+    m_width = image->GetWidth();
+    m_height = image->GetHeight();
+    m_format = format;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->GetWidth(), image->GetHeight(), 0, format, GL_UNSIGNED_BYTE, image->GetData());
+    glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, format, GL_UNSIGNED_BYTE, image->GetData());
     glGenerateMipmap(GL_TEXTURE_2D);
 }

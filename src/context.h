@@ -9,6 +9,7 @@
 #include "texture.h"
 #include "mesh.h"
 #include "model.h"
+#include "framebuffer.h"
 
 CLASS_PTR(Context)
 class Context
@@ -29,7 +30,7 @@ private:
     ProgramUPtr m_textureProgram;
 
     MeshUPtr m_box;
-    MeshUPtr m_plane;    
+    MeshUPtr m_plane;
 
     // animation
     bool m_animation{true};
@@ -54,7 +55,7 @@ private:
     // material parameter
     MaterialPtr m_planeMaterial;
     MaterialPtr m_box1Material;
-    MaterialPtr m_box2Material;    
+    MaterialPtr m_box2Material;
     TexturePtr m_windowTexture;
 
     // camera parameter
@@ -65,6 +66,9 @@ private:
     glm::vec3 m_cameraPos{glm::vec3(0.0f, 2.5f, 8.0f)};
     glm::vec3 m_cameraFront{glm::vec3(0.0f, 0.0f, -1.0f)}; // 카메라가 타겟을 바라보는 방향
     glm::vec3 m_cameraUp{glm::vec3(0.0f, 1.0f, 0.0f)};
+
+    // framebuffer
+    FramebufferUPtr m_framebuffer;
 
     // window size
     int m_width{WINDOW_WIDTH};
