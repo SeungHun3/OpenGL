@@ -75,7 +75,8 @@ private:
     // cubemap
     CubeTextureUPtr m_cubeTexture;
     ProgramUPtr m_skyboxProgram;
-    
+    ProgramUPtr m_envMapProgram;
+
     // window size
     int m_width{WINDOW_WIDTH};
     int m_height{WINDOW_HEIGHT};
