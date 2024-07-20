@@ -83,6 +83,25 @@ bool Context::Init()
         m_grassPos[i].y = glm::radians((float)rand() / (float)RAND_MAX * 360.0f);
     }
 
+    m_grassInstance = VertexLayout::Create(); // VAO 생성
+    m_grassInstance->Bind();
+    // m_grassInstance layout(VAO)에 에 m_plane의 버퍼(VBO)를 바인딩
+    // => cpu에서 관리하고 있는 VBO핸들(m_plane bufferPtr)을 통해 GPU 메모리에 있는 데이터로 접근하여
+    //    m_grassInstance VAO에 m_plane VBO 바인딩
+    m_plane->GetVertexBuffer()->Bind();
+    m_grassInstance->SetAttrib(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+    m_grassInstance->SetAttrib(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), offsetof(Vertex, normal));
+    m_grassInstance->SetAttrib(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), offsetof(Vertex, texCoord));
+
+    m_grassPosBuffer = Buffer::CreateWithData(GL_ARRAY_BUFFER, GL_STATIC_DRAW, m_grassPos.data(), sizeof(glm::vec3), m_grassPos.size());
+    m_grassPosBuffer->Bind();
+    m_grassInstance->SetAttrib(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+    // 3번째 attribute (offset) 은 gl_VertexID가 아닌 gl_InstanceID(각기다른 위치 등의 정보를 가진 오브젝트)가 1 증가할 때마다 값이 달라짐
+    // => cpu에서 각각 drawcall을 하지 않아도 VBO에 적용된 연산만으로 렌더링가능
+    glVertexAttribDivisor(3, 1);
+    // m_grassInstance VAO에 m_plane EBO 바인딩
+    m_plane->GetIndexBuffer()->Bind();
+
     return true;
 }
 
@@ -259,15 +278,14 @@ void Context::Render()
     m_grassProgram->Use();
     m_grassProgram->SetUniform("tex", 0);
     m_grassTexture->Bind();
-    for (size_t i = 0; i < m_grassPos.size(); i++)
-    {
-        modelTransform =
-            glm::translate(glm::mat4(1.0f), glm::vec3(m_grassPos[i].x, 0.5f, m_grassPos[i].z)) *
-            glm::rotate(glm::mat4(1.0f), m_grassPos[i].y, glm::vec3(0.0f, 1.0f, 0.0f));
-        transform = projection * view * modelTransform;
-        m_grassProgram->SetUniform("transform", transform);
-        m_plane->Draw(m_grassProgram.get());
-    }
+    m_grassInstance->Bind();
+    modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f));
+    transform = projection * view * modelTransform;
+    m_grassProgram->SetUniform("transform", transform);
+    glDrawElementsInstanced(GL_TRIANGLES,
+                            m_plane->GetIndexBuffer()->GetCount(),
+                            GL_UNSIGNED_INT, 0,
+                            m_grassPosBuffer->GetCount());
 
     Framebuffer::BindToDefault();
 
