@@ -8,11 +8,11 @@ TextureUPtr Texture::CreateFromImage(const Image *image)
     return std::move(texture);
 }
 
-TextureUPtr Texture::Create(int width, int height, uint32_t format)
+TextureUPtr Texture::Create(int width, int height, uint32_t format, uint32_t type)
 {
     auto texture = TextureUPtr(new Texture());
     texture->CreateTexture();
-    texture->SetTextureFormat(width, height, format);
+    texture->SetTextureFormat(width, height, format, type);
     texture->SetFilter(GL_LINEAR, GL_LINEAR);
     return std::move(texture);
 }
@@ -36,13 +36,14 @@ void Texture::SetFilter(uint32_t minFilter, uint32_t magFilter) const
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 }
 
-void Texture::SetTextureFormat(int width, int height, uint32_t format)
+void Texture::SetTextureFormat(int width, int height, uint32_t format, uint32_t type)
 {
     m_width = width;
     m_height = height;
     m_format = format;
+    m_type = type;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, m_format, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, m_format, m_type, nullptr);
 }
 
 void Texture::SetWrap(uint32_t sWrap, uint32_t tWrap) const
@@ -80,12 +81,13 @@ void Texture::SetTextureFromImage(const Image *image)
     m_width = image->GetWidth();
     m_height = image->GetHeight();
     m_format = format;
+    m_type = GL_UNSIGNED_BYTE;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, format, GL_UNSIGNED_BYTE, image->GetData());
+    glTexImage2D(GL_TEXTURE_2D, 0, m_format, m_width, m_height, 0, format, m_type, image->GetData());
     glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-CubeTextureUPtr CubeTexture::CreateFromImages(const std::vector<Image *>& images)
+CubeTextureUPtr CubeTexture::CreateFromImages(const std::vector<Image *> &images)
 {
     auto texture = CubeTextureUPtr(new CubeTexture());
     if (!texture->InitFromImages(images))
@@ -106,21 +108,21 @@ void CubeTexture::Bind() const
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_texture);
 }
 
-bool CubeTexture::InitFromImages(const std::vector<Image *>& images)
+bool CubeTexture::InitFromImages(const std::vector<Image *> &images)
 {
     glGenTextures(1, &m_texture);
     Bind();
 
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //큐브 맵의 가로 방향 좌표 (U와 유사).
+    // 큐브 맵의 가로 방향 좌표 (U와 유사).
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    //큐브 맵의 세로 방향 좌표 (V와 유사).
+    // 큐브 맵의 세로 방향 좌표 (V와 유사).
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    //큐브 맵의 깊이 방향 좌표, 즉 큐브의 중심에서 특정 면으로의 벡터 방향
+    // 큐브 맵의 깊이 방향 좌표, 즉 큐브의 중심에서 특정 면으로의 벡터 방향
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    //R 축은 큐브 맵 텍스처의 깊이 방향 좌표를 나타내며, 큐브의 중심에서 텍스처 좌표로의 벡터를 나타낸다.
-    //이를 통해 큐브 맵 텍스처의 각 면에 대해 올바른 텍스처를 선택하고, 3D 공간에서 텍스처를 올바르게 매핑할 수 있다.
+    // R 축은 큐브 맵 텍스처의 깊이 방향 좌표를 나타내며, 큐브의 중심에서 텍스처 좌표로의 벡터를 나타낸다.
+    // 이를 통해 큐브 맵 텍스처의 각 면에 대해 올바른 텍스처를 선택하고, 3D 공간에서 텍스처를 올바르게 매핑할 수 있다.
 
     for (uint32_t i = 0; i < (uint32_t)images.size(); i++)
     {
