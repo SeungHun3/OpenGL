@@ -23,19 +23,20 @@ void ShadowMap::Bind() const
 
 bool ShadowMap::Init(int width, int height)
 {
-    //shadow map의 크기를 지정하면 해당 크기의 depth 텍스처를 만들어서 framebuffer에 바인딩
+    // shadow map의 크기를 지정하면 해당 크기의 depth 텍스처를 만들어서 framebuffer에 바인딩
     glGenFramebuffers(1, &m_framebuffer);
     Bind();
 
-    // GL_DEPTH_COMPONENT: 
-    //      텍스처의 각 픽셀이 깊이 값을 가지도록 한다. 
+    // GL_DEPTH_COMPONENT:
+    //      텍스처의 각 픽셀이 깊이 값을 가지도록 한다.
     //      텍스처가 단일 채널로 구성되며, 이 채널이 깊이 값을 저장함을 나타낸다.
-    
+
     // GL_FLOAT타입의 GL_DEPTH_COMPONENT 텍스쳐 만들어서
     m_shadowMap = Texture::Create(width, height, GL_DEPTH_COMPONENT, GL_FLOAT);
     // 필터 및 랩핑 수정 후
     m_shadowMap->SetFilter(GL_NEAREST, GL_NEAREST);
-    m_shadowMap->SetWrap(GL_REPEAT, GL_REPEAT);
+    m_shadowMap->SetWrap(GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER);
+    m_shadowMap->SetBorderColor(glm::vec4(1.0f));
 
     // 텍스쳐(m_shadowMap)를 depth map(GL_DEPTH_ATTACHMENT)에 붙임
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
