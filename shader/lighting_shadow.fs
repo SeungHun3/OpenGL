@@ -34,7 +34,7 @@ uniform int blinn;
 // first pass 에 그린 depth map
 uniform sampler2D shadowMap;
 
-float ShadowCalculation(vec4 fragPosLight) 
+float ShadowCalculation(vec4 fragPosLight, vec3 normal, vec3 lightDir) 
 {
     //fragPosLight를 바탕으로 light에서 본 픽셀의 위치 계산
     //shadowMap에서부터 해당 픽셀의 depth값 가져오기
@@ -50,9 +50,9 @@ float ShadowCalculation(vec4 fragPosLight)
     // get depth of current fragment from light’s perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    float bias = 0.005;
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-    
+
     return shadow;
 }
 
@@ -93,7 +93,7 @@ void main()
             spec = pow(max(dot(halfDir, pixelNorm), 0.0), material.shininess);
         }
         vec3 specular = spec * specColor * light.specular;
-        float shadow = ShadowCalculation(fs_in.fragPosLight);
+        float shadow = ShadowCalculation(fs_in.fragPosLight, pixelNorm, lightDir);
 
         result += (diffuse + specular) * intensity * (1.0 - shadow);
     }
