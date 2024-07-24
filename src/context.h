@@ -89,6 +89,7 @@ private:
 
     // shadow map
     ShadowMapUPtr m_shadowMap;
+    ProgramUPtr m_lightingShadowProgram;
 
     // window size
     int m_width{WINDOW_WIDTH};
