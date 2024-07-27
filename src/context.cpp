@@ -253,7 +253,8 @@ void Context::Render()
     DrawScene(view, projection, m_lightingShadowProgram.get());
 
     auto modelTransform =
-        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 3.0f, 0.0f));
+        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 3.0f, 0.0f)) *
+        glm::rotate(glm::mat4(1.0f),glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     m_normalProgram->Use();
     m_normalProgram->SetUniform("viewPos", m_cameraPos);
     m_normalProgram->SetUniform("lightPos", m_light.position);
@@ -267,7 +268,7 @@ void Context::Render()
     m_normalProgram->SetUniform("modelTransform", modelTransform);
     m_normalProgram->SetUniform("transform", projection * view * modelTransform);
     m_plane->Draw(m_normalProgram.get());
-    
+
     // Framebuffer::BindToDefault();
 
     // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
