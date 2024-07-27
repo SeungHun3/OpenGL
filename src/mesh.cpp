@@ -28,26 +28,32 @@ MeshUPtr Mesh::Create(const std::vector<Vertex> &vertices, const std::vector<uin
     return std::move(mesh);
 }
 
-MeshUPtr Mesh::CreatePlane() 
+MeshUPtr Mesh::CreatePlane()
 {
-    std::vector<Vertex> vertices = 
-    {
-        Vertex { glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3( 0.0f,  0.0f, 1.0f), glm::vec2(0.0f, 0.0f) },
-        Vertex { glm::vec3( 0.5f, -0.5f, 0.0f), glm::vec3( 0.0f,  0.0f, 1.0f), glm::vec2(1.0f, 0.0f) },
-        Vertex { glm::vec3( 0.5f,  0.5f, 0.0f), glm::vec3( 0.0f,  0.0f, 1.0f), glm::vec2(1.0f, 1.0f) },
-        Vertex { glm::vec3(-0.5f,  0.5f, 0.0f), glm::vec3( 0.0f,  0.0f, 1.0f), glm::vec2(0.0f, 1.0f) },
-    };
+    std::vector<Vertex> vertices =
+        {
+            Vertex{glm::vec3(-0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
+            Vertex{glm::vec3(0.5f, -0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 0.0f)},
+            Vertex{glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(1.0f, 1.0f)},
+            Vertex{glm::vec3(-0.5f, 0.5f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec2(0.0f, 1.0f)},
+        };
 
-    std::vector<uint32_t> indices = 
-    {
+    std::vector<uint32_t> indices =
+        {
         0,  1,  2,  2,  3,  0,
-    };
+        };
 
     return Create(vertices, indices, GL_TRIANGLES);
 }
 
 void Mesh::Init(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices, uint32_t primitiveType)
 {
+    // 삼각형일 경우 tangent 계산
+    if (primitiveType == GL_TRIANGLES) 
+    {
+        ComputeTangents(const_cast<std::vector<Vertex>&>(vertices), indices);
+    }
+
     // VAO생성
     m_vertexLayout = VertexLayout::Create();
     // VBO생성
@@ -58,19 +64,75 @@ void Mesh::Init(const std::vector<Vertex> &vertices, const std::vector<uint32_t>
     m_vertexLayout->SetAttrib(0, 3, GL_FLOAT, false, sizeof(Vertex), 0);
     m_vertexLayout->SetAttrib(1, 3, GL_FLOAT, false, sizeof(Vertex), offsetof(Vertex, normal));
     m_vertexLayout->SetAttrib(2, 2, GL_FLOAT, false, sizeof(Vertex), offsetof(Vertex, texCoord));
+    m_vertexLayout->SetAttrib(3, 3, GL_FLOAT, false, sizeof(Vertex), offsetof(Vertex, tangent));
 }
 
 void Mesh::Draw(const Program* program) const
 {
     m_vertexLayout->Bind();
-    if (m_material) 
+    if (m_material)
     {
         m_material->SetToProgram(program);
     }
     glDrawElements(m_primitiveType, m_indexBuffer->GetCount(), GL_UNSIGNED_INT, 0);
 }
 
-MeshUPtr Mesh::CreateBox() 
+void Mesh::ComputeTangents(std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices)
+{
+    auto compute = [](
+    const glm::vec3 &pos1, const glm::vec3 &pos2, const glm::vec3 &pos3,
+    const glm::vec2 &uv1, const glm::vec2 &uv2, const glm::vec2 &uv3)
+    -> glm::vec3
+    {
+        auto edge1 = pos2 - pos1;
+        auto edge2 = pos3 - pos1;
+        auto deltaUV1 = uv2 - uv1;
+        auto deltaUV2 = uv3 - uv1;
+        float det = (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+        if (det != 0.0f)
+        {
+            auto invDet = 1.0f / det;
+            return invDet * (deltaUV2.y * edge1 - deltaUV1.y * edge2);
+        }
+        else
+        {
+            return glm::vec3(0.0f, 0.0f, 0.0f);
+        }
+    };
+
+    // initialize
+    std::vector<glm::vec3> tangents;
+    tangents.resize(vertices.size());
+    memset(tangents.data(), 0, tangents.size() * sizeof(glm::vec3));
+
+    // accumulate triangle tangents to each vertex
+    for (size_t i = 0; i < indices.size(); i += 3)
+    {
+        auto v1 = indices[i];
+        auto v2 = indices[i + 1];
+        auto v3 = indices[i + 2];
+
+        tangents[v1] += compute(
+            vertices[v1].position, vertices[v2].position, vertices[v3].position,
+            vertices[v1].texCoord, vertices[v2].texCoord, vertices[v3].texCoord);
+
+        tangents[v2] = compute(
+            vertices[v2].position, vertices[v3].position, vertices[v1].position,
+            vertices[v2].texCoord, vertices[v3].texCoord, vertices[v1].texCoord);
+
+        tangents[v3] = compute(
+            vertices[v3].position, vertices[v1].position, vertices[v2].position,
+            vertices[v3].texCoord, vertices[v1].texCoord, vertices[v2].texCoord);
+    }
+
+    // normalize
+    for (size_t i = 0; i < vertices.size(); i++)
+    {
+        vertices[i].tangent = glm::normalize(tangents[i]);
+    }
+}
+
+MeshUPtr Mesh::CreateBox()
 {
     std::vector<Vertex> vertices = {
         Vertex { glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3( 0.0f,  0.0f, -1.0f), glm::vec2(0.0f, 0.0f) },

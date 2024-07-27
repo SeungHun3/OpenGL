@@ -2,6 +2,9 @@
 
 in vec2 texCoord;
 in vec3 position;
+in vec3 normal;
+in vec3 tangent;
+
 out vec4 fragColor;
 
 uniform vec3 viewPos;
@@ -13,8 +16,14 @@ uniform sampler2D normalMap;
 void main()
 {
     vec3 texColor = texture(diffuse, texCoord).xyz;
-    // 0~255 픽셀을 -1 ~ 1사이의 값으로 스케일링(normal * 2.0 - 1.0)
-    vec3 pixelNorm = normalize((texture(normalMap, texCoord).xyz * 2.0 - 1.0));
+    vec3 texNorm = texture(normalMap, texCoord).xyz * 2.0 - 1.0;
+    vec3 N = normalize(normal);
+    vec3 T = normalize(tangent);
+    vec3 B = cross(N, T);
+    // Tangent space
+    mat3 TBN = mat3(T, B, N);
+    vec3 pixelNorm = normalize(TBN * texNorm);
+
     vec3 ambient = texColor * 0.2;
 
     vec3 lightDir = normalize(lightPos - position);
