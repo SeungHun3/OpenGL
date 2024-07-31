@@ -126,6 +126,7 @@ bool Context::Init()
     }
 
     m_ssaoProgram = Program::Create("./shader/ssao.vs", "./shader/ssao.fs");
+    m_blurProgram = Program::Create("./shader/blur_5x5.vs", "./shader/blur_5x5.fs");
     m_model = Model::Load("./model/backpack.obj");
 
     std::vector<glm::vec3> ssaoNoise;
@@ -235,9 +236,16 @@ void Context::Render()
 
     if (ImGui::Begin("SSAO"))
     {
+        const char *bufferNames[] = {"original", "blurred"};
+        static int bufferSelect = 0;
+        ImGui::Combo("buffer", &bufferSelect, bufferNames, 2);
+
         float width = ImGui::GetContentRegionAvailWidth();
         float height = width * ((float)m_height / (float)m_width);
-        ImGui::Image((ImTextureID)m_ssaoFramebuffer->GetColorAttachment()->Get(),
+        auto selectedAttachment =
+            bufferSelect == 0 ? m_ssaoFramebuffer->GetColorAttachment() : m_ssaoBlurFramebuffer->GetColorAttachment();
+
+        ImGui::Image((ImTextureID)selectedAttachment->Get(),
                      ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
     }
     ImGui::End();
@@ -310,6 +318,16 @@ void Context::Render()
     m_ssaoProgram->SetUniform("view", view);
     m_ssaoProgram->SetUniform("projection", projection);
     m_plane->Draw(m_ssaoProgram.get());
+
+    m_ssaoBlurFramebuffer->Bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, m_width, m_height);
+    m_blurProgram->Use();
+    m_ssaoFramebuffer->GetColorAttachment(0)->Bind();
+    m_blurProgram->SetUniform("tex", 0);
+    m_blurProgram->SetUniform("transform",
+                              glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+    m_plane->Draw(m_blurProgram.get());
 
     Framebuffer::BindToDefault();
     glViewport(0, 0, m_width, m_height);
@@ -575,6 +593,10 @@ void Context::Reshape(int width, int height)
     });
 
     m_ssaoFramebuffer = Framebuffer::Create({
+        Texture::Create(width, height, GL_RED),
+    });
+
+    m_ssaoBlurFramebuffer = Framebuffer::Create({
         Texture::Create(width, height, GL_RED),
     });
 }
