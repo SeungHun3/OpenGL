@@ -123,6 +123,8 @@ private:
 
     ProgramUPtr m_blurProgram;
     FramebufferUPtr m_ssaoBlurFramebuffer;
+    bool m_useSsao{true};
+    
 };
 
 #endif // __CONTEXT_H__
