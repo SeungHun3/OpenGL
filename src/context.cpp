@@ -125,6 +125,9 @@ bool Context::Init()
             RandomRange(0.05f, 0.3f));
     }
 
+    m_ssaoProgram = Program::Create("./shader/ssao.vs", "./shader/ssao.fs");
+    m_model = Model::Load("./model/backpack.obj");
+
     return true;
 }
 
@@ -193,6 +196,15 @@ void Context::Render()
     }
     ImGui::End();
 
+    if (ImGui::Begin("SSAO"))
+    {
+        float width = ImGui::GetContentRegionAvailWidth();
+        float height = width * ((float)m_height / (float)m_width);
+        ImGui::Image((ImTextureID)m_ssaoFramebuffer->GetColorAttachment()->Get(),
+                     ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+    }
+    ImGui::End();
+
     m_cameraFront =
         // 기본방향을 정해주고
         glm::vec4(0.0f, 0.0f, -1.0f, 0.0f) *
@@ -224,13 +236,30 @@ void Context::Render()
     // 라이트 뷰에서 장면의 깊이 값을 저장하는 텍스처 렌더링
     DrawScene(lightView, lightProjection, m_simpleProgram.get());
 
-    // 쉐도우 맵에서 생성한 프레임버퍼 그대로 사용
+    // G-buffer 생성
     m_deferGeoFramebuffer->Bind();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, m_width, m_height);
     m_deferGeoProgram->Use();
+    // m_deferGeoProgram에서 m_deferGeoFramebuffer의 텍스쳐의 값 채워줌
     DrawScene(view, projection, m_deferGeoProgram.get());
+
+    m_ssaoFramebuffer->Bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, m_width, m_height);
+    m_ssaoProgram->Use();
+    glActiveTexture(GL_TEXTURE0);
+    m_deferGeoFramebuffer->GetColorAttachment(0)->Bind();
+    glActiveTexture(GL_TEXTURE1);
+    m_deferGeoFramebuffer->GetColorAttachment(1)->Bind();
+    glActiveTexture(GL_TEXTURE0);
+    m_ssaoProgram->SetUniform("gPosition", 0);
+    m_ssaoProgram->SetUniform("gNormal", 1);
+    m_ssaoProgram->SetUniform("transform",
+                              glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
+    m_ssaoProgram->SetUniform("view", view);
+    m_plane->Draw(m_ssaoProgram.get());
 
     Framebuffer::BindToDefault();
     glViewport(0, 0, m_width, m_height);
@@ -240,13 +269,16 @@ void Context::Render()
     glEnable(GL_DEPTH_TEST);
 
     m_deferLightProgram->Use();
+    // GL_TEXTURE0 텍스쳐 활성화
     glActiveTexture(GL_TEXTURE0);
+    // m_deferGeoFramebuffer바인드하여 draw된 결과 텍스쳐를 바인딩
     m_deferGeoFramebuffer->GetColorAttachment(0)->Bind();
     glActiveTexture(GL_TEXTURE1);
     m_deferGeoFramebuffer->GetColorAttachment(1)->Bind();
     glActiveTexture(GL_TEXTURE2);
     m_deferGeoFramebuffer->GetColorAttachment(2)->Bind();
     glActiveTexture(GL_TEXTURE0);
+    // GL_TEXTURE0을 통하여 m_deferGeoFramebuffer의 텍스쳐에 접근
     m_deferLightProgram->SetUniform("gPosition", 0);
     m_deferLightProgram->SetUniform("gNormal", 1);
     m_deferLightProgram->SetUniform("gAlbedoSpec", 2);
@@ -402,6 +434,15 @@ void Context::DrawScene(const glm::mat4 &view, const glm::mat4 &projection, cons
     program->SetUniform("modelTransform", modelTransform);
     m_box2Material->SetToProgram(program);
     m_box->Draw(program);
+
+    modelTransform =
+        glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.55f, 0.0f)) *
+        glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+        glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+    transform = projection * view * modelTransform;
+    program->SetUniform("transform", transform);
+    program->SetUniform("modelTransform", modelTransform);
+    m_model->Draw(program);
 }
 
 void Context::ProcessInput(GLFWwindow *window)
@@ -481,5 +522,9 @@ void Context::Reshape(int width, int height)
         Texture::Create(width, height, GL_RGBA16F, GL_FLOAT),
         Texture::Create(width, height, GL_RGBA16F, GL_FLOAT),
         Texture::Create(width, height, GL_RGBA, GL_UNSIGNED_BYTE),
+    });
+
+    m_ssaoFramebuffer = Framebuffer::Create({
+        Texture::Create(width, height, GL_RED),
     });
 }

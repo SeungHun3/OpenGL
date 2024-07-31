@@ -112,6 +112,11 @@ private:
         glm::vec3 color;
     };
     std::vector<DeferLight> m_deferLights;
+
+    // ssao
+    FramebufferUPtr m_ssaoFramebuffer;
+    ProgramUPtr m_ssaoProgram;
+    ModelUPtr m_model; // for test rendering
 };
 
 #endif // __CONTEXT_H__
