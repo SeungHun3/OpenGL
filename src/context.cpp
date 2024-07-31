@@ -146,6 +146,24 @@ bool Context::Init()
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4,
                     GL_RGB, GL_FLOAT, ssaoNoise.data());
 
+    m_ssaoSamples.resize(64);
+    for (size_t i = 0; i < m_ssaoSamples.size(); i++)
+    {
+        // uniformly randomized point in unit hemisphere
+        glm::vec3 sample(
+            RandomRange(-1.0f, 1.0f),
+            RandomRange(-1.0f, 1.0f),
+            RandomRange(0.0f, 1.0f));
+        sample = glm::normalize(sample) * RandomRange();
+
+        // scale for slightly shift to center
+        float t = (float)i / (float)m_ssaoSamples.size();
+        float t2 = t * t;
+        float scale = (1.0f - t2) * 0.1f + t2 * 1.0f;
+
+        m_ssaoSamples[i] = sample * scale;
+    }
+
     return true;
 }
 
@@ -181,6 +199,7 @@ void Context::Render()
             ImGui::ColorEdit3("l.specular", glm::value_ptr(m_light.specular));
             ImGui::Checkbox("flash light", &m_flashLightMode);
             ImGui::Checkbox("l.blinn", &m_blinn);
+            ImGui::DragFloat("ssao radius", &m_ssaoRadius, 0.01f, 0.0f, 5.0f);
         }
 
         ImGui::Checkbox("animation", &m_animation);
@@ -280,9 +299,16 @@ void Context::Render()
     m_ssaoProgram->SetUniform("noiseScale", glm::vec2(
                                                 (float)m_width / (float)m_ssaoNoiseTexture->GetWidth(),
                                                 (float)m_height / (float)m_ssaoNoiseTexture->GetHeight()));
+    m_ssaoProgram->SetUniform("radius", m_ssaoRadius);
+    for (size_t i = 0; i < m_ssaoSamples.size(); i++)
+    {
+        auto sampleName = fmt::format("samples[{}]", i);
+        m_ssaoProgram->SetUniform(sampleName, m_ssaoSamples[i]);
+    }
     m_ssaoProgram->SetUniform("transform",
                               glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
     m_ssaoProgram->SetUniform("view", view);
+    m_ssaoProgram->SetUniform("projection", projection);
     m_plane->Draw(m_ssaoProgram.get());
 
     Framebuffer::BindToDefault();
