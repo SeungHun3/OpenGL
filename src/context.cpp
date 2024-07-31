@@ -128,6 +128,24 @@ bool Context::Init()
     m_ssaoProgram = Program::Create("./shader/ssao.vs", "./shader/ssao.fs");
     m_model = Model::Load("./model/backpack.obj");
 
+    std::vector<glm::vec3> ssaoNoise;
+    ssaoNoise.resize(16);
+    for (size_t i = 0; i < ssaoNoise.size(); i++)
+    {
+        // randomly selected tangent direction
+        glm::vec3 sample(RandomRange(-1.0f, 1.0f),
+                         RandomRange(-1.0f, 1.0f), 0.0f);
+        ssaoNoise[i] = sample;
+    }
+
+    m_ssaoNoiseTexture = Texture::Create(4, 4, GL_RGB16F, GL_FLOAT);
+    m_ssaoNoiseTexture->Bind();
+    m_ssaoNoiseTexture->SetFilter(GL_NEAREST, GL_NEAREST);
+    m_ssaoNoiseTexture->SetWrap(GL_REPEAT, GL_REPEAT);
+    // 할당된 GL_TEXTURE_2D메모리에 cpu메모리 (ssaoNoise.data()) 복사
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4,
+                    GL_RGB, GL_FLOAT, ssaoNoise.data());
+
     return true;
 }
 
@@ -253,9 +271,15 @@ void Context::Render()
     m_deferGeoFramebuffer->GetColorAttachment(0)->Bind();
     glActiveTexture(GL_TEXTURE1);
     m_deferGeoFramebuffer->GetColorAttachment(1)->Bind();
+    glActiveTexture(GL_TEXTURE2);
+    m_ssaoNoiseTexture->Bind();
     glActiveTexture(GL_TEXTURE0);
     m_ssaoProgram->SetUniform("gPosition", 0);
     m_ssaoProgram->SetUniform("gNormal", 1);
+    m_ssaoProgram->SetUniform("texNoise", 2);
+    m_ssaoProgram->SetUniform("noiseScale", glm::vec2(
+                                                (float)m_width / (float)m_ssaoNoiseTexture->GetWidth(),
+                                                (float)m_height / (float)m_ssaoNoiseTexture->GetHeight()));
     m_ssaoProgram->SetUniform("transform",
                               glm::scale(glm::mat4(1.0f), glm::vec3(2.0f)));
     m_ssaoProgram->SetUniform("view", view);
