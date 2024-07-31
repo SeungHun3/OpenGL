@@ -109,6 +109,8 @@ bool Context::Init()
     m_brickDiffuseTexture = Texture::CreateFromImage(Image::Load("./image/brickwall.jpg", false).get());
     m_brickNormalTexture = Texture::CreateFromImage(Image::Load("./image/brickwall_normal.jpg", false).get());
     m_normalProgram = Program::Create("./shader/normal.vs", "./shader/normal.fs");
+    m_deferGeoProgram = Program::Create("./shader/defer_geo.vs", "./shader/defer_geo.fs");
+
     return true;
 }
 
@@ -159,6 +161,39 @@ void Context::Render()
     }
     ImGui::End();
 
+    if (ImGui::Begin("G-Buffers"))
+    {
+        const char *bufferNames[] = {
+            "position",
+            "normal",
+            "albedo/specular",
+        };
+        static int bufferSelect = 0;
+        ImGui::Combo("buffer", &bufferSelect, bufferNames, 3);
+        float width = ImGui::GetContentRegionAvailWidth();
+        float height = width * ((float)m_height / (float)m_width);
+        auto selectedAttachment =
+            m_deferGeoFramebuffer->GetColorAttachment(bufferSelect);
+        ImGui::Image((ImTextureID)selectedAttachment->Get(),
+                     ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+    }
+    ImGui::End();
+
+    m_cameraFront =
+        // 기본방향을 정해주고
+        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f) *
+        // y축으로 yaw만큼 회전시킨 벡터를
+        glm::rotate(glm::mat4(1.0f), glm::radians(m_cameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
+        // 다시 x축으로 pitch만큼 회전
+        glm::rotate(glm::mat4(1.0f), glm::radians(m_cameraPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    auto projection = glm::perspective(glm::radians(45.0f), (float)m_width / (float)m_height, 0.1f, 100.0f);
+
+    auto view = glm::lookAt(
+        m_cameraPos,
+        m_cameraPos + m_cameraFront,
+        m_cameraUp);
+
     // 라이트 뷰 및 프로젝션 행렬 생성
     auto lightView = glm::lookAt(m_light.position,
                                  m_light.position + m_light.direction,
@@ -174,32 +209,22 @@ void Context::Render()
     m_simpleProgram->SetUniform("color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     // 라이트 뷰에서 장면의 깊이 값을 저장하는 텍스처 렌더링
     DrawScene(lightView, lightProjection, m_simpleProgram.get());
-    // 기본 프레임버퍼로 복원 및 뷰포트 설정
+
+    m_deferGeoFramebuffer->Bind();
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glViewport(0, 0, m_width, m_height);
+    m_deferGeoProgram->Use();
+    DrawScene(view, projection, m_deferGeoProgram.get());
+
     Framebuffer::BindToDefault();
     glViewport(0, 0, m_width, m_height);
-
-    // 직접만든 프레임버퍼는 멀티 샘플링이 되어있지 않아 주석처리함
-    // m_framebuffer->Bind();
+    glClearColor(m_clearColor.r, m_clearColor.g, m_clearColor.b, m_clearColor.a);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
     m_program->Use();
-
-    auto projection = glm::perspective(glm::radians(45.0f), (float)m_width / (float)m_height, 0.1f, 100.0f);
-
-    m_cameraFront =
-        // 기본방향을 정해주고
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f) *
-        // y축으로 yaw만큼 회전시킨 벡터를
-        glm::rotate(glm::mat4(1.0f), glm::radians(m_cameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
-        // 다시 x축으로 pitch만큼 회전
-        glm::rotate(glm::mat4(1.0f), glm::radians(m_cameraPitch), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    auto view = glm::lookAt(
-        m_cameraPos,
-        m_cameraPos + m_cameraFront,
-        m_cameraUp);
 
     auto skyboxModelTransform =
         glm::translate(glm::mat4(1.0), m_cameraPos) *
@@ -254,7 +279,7 @@ void Context::Render()
 
     auto modelTransform =
         glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 3.0f, 0.0f)) *
-        glm::rotate(glm::mat4(1.0f),glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     m_normalProgram->Use();
     m_normalProgram->SetUniform("viewPos", m_cameraPos);
     m_normalProgram->SetUniform("lightPos", m_light.position);
@@ -397,4 +422,10 @@ void Context::Reshape(int width, int height)
     glViewport(0, 0, m_width, m_height);
 
     m_framebuffer = Framebuffer::Create({Texture::Create(width, height, GL_RGBA)});
+
+    m_deferGeoFramebuffer = Framebuffer::Create({
+        Texture::Create(width, height, GL_RGBA16F, GL_FLOAT),
+        Texture::Create(width, height, GL_RGBA16F, GL_FLOAT),
+        Texture::Create(width, height, GL_RGBA, GL_UNSIGNED_BYTE),
+    });
 }

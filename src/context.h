@@ -100,6 +100,10 @@ private:
     // window size
     int m_width{WINDOW_WIDTH};
     int m_height{WINDOW_HEIGHT};
+
+    // deferred shading
+    FramebufferUPtr m_deferGeoFramebuffer;
+    ProgramUPtr m_deferGeoProgram;
 };
 
 #endif // __CONTEXT_H__
