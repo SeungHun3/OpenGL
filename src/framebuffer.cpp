@@ -27,21 +27,21 @@ void Framebuffer::BindToDefault()
 
 void Framebuffer::Bind() const
 {
-    //설정한 프레임버퍼 상태가 자동으로 적용
+    // 설정한 프레임버퍼 상태가 자동으로 적용
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 }
 
 bool Framebuffer::InitWithColorAttachments(const std::vector<TexturePtr> &colorAttachments)
 {
     m_colorAttachments = colorAttachments;
-    //프레임버퍼 객체 생성
+    // 프레임버퍼 객체 생성
     glGenFramebuffers(1, &m_framebuffer);
-    //프레임버퍼 바인딩 : 이 프레임버퍼를 현재의 렌더링 타겟으로 설정
+    // 프레임버퍼 바인딩 : 이 프레임버퍼를 현재의 렌더링 타겟으로 설정
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 
     for (size_t i = 0; i < m_colorAttachments.size(); i++)
     {
-        //컬러 텍스처 생성 및 설정 : 추후 렌더링 결과를 이 텍스처에 저장할 수 있음
+        // 컬러 텍스처 생성 및 설정 : 추후 렌더링 결과를 이 텍스처에 저장할 수 있음
         glFramebufferTexture2D(GL_FRAMEBUFFER,
                                GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
                                m_colorAttachments[i]->Get(), 0);
@@ -76,7 +76,7 @@ bool Framebuffer::InitWithColorAttachments(const std::vector<TexturePtr> &colorA
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     // GL_FRAMEBUFFER에 m_depthStencilBuffer 첨부
-    // => m_framebuffer가 사용될때 
+    // => m_framebuffer가 사용될때
     //    렌더링된 GL_RENDERBUFFER유형의 GL_DEPTH_STENCIL_ATTACHMENT값은 m_depthStencilBuffer의 할당된 메모리에 저장된다
     glFramebufferRenderbuffer(
         GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
@@ -90,6 +90,69 @@ bool Framebuffer::InitWithColorAttachments(const std::vector<TexturePtr> &colorA
     }
 
     BindToDefault();
+
+    return true;
+}
+
+CubeFramebufferUPtr CubeFramebuffer::Create(const CubeTexturePtr colorAttachment)
+{
+    auto framebuffer = CubeFramebufferUPtr(new CubeFramebuffer());
+    if (!framebuffer->InitWithColorAttachment(colorAttachment))
+        return nullptr;
+    return std::move(framebuffer);
+}
+
+CubeFramebuffer::~CubeFramebuffer()
+{
+    if (m_depthStencilBuffer)
+    {
+        glDeleteRenderbuffers(1, &m_depthStencilBuffer);
+    }
+    if (m_framebuffer)
+    {
+        glDeleteFramebuffers(1, &m_framebuffer);
+    }
+}
+
+void CubeFramebuffer::Bind(int cubeIndex) const
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER,
+                           GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + cubeIndex,
+                           m_colorAttachment->Get(), 0);
+}
+
+//하나의 framebuffer에 cubemap의 각 면을 color attachment 0번에만 바꿔가며 설정
+bool CubeFramebuffer::InitWithColorAttachment(const CubeTexturePtr &colorAttachment)
+{
+    m_colorAttachment = colorAttachment;
+    glGenFramebuffers(1, &m_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER,
+                           GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+                           m_colorAttachment->Get(), 0);
+
+    int width = m_colorAttachment->GetWidth();
+    int height = m_colorAttachment->GetHeight();
+
+    glGenRenderbuffers(1, &m_depthStencilBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_depthStencilBuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    glFramebufferRenderbuffer(
+        GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+        GL_RENDERBUFFER, m_depthStencilBuffer);
+
+    auto result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (result != GL_FRAMEBUFFER_COMPLETE)
+    {
+        SPDLOG_ERROR("failed to create framebuffer: 0x{:04x}", result);
+        return false;
+    }
+
+    Framebuffer::BindToDefault();
 
     return true;
 }
