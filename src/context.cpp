@@ -22,22 +22,24 @@ bool Context::Init()
 
     m_simpleProgram = Program::Create("./shader/simple.vs", "./shader/simple.fs");
 
-    // m_pbrProgram = Program::Create("./shader/pbr.vs", "./shader/pbr.fs");
-    m_pbrProgram = Program::Create("./shader/pbr_texture.vs", "./shader/pbr_texture.fs");
-
-    m_material.albedo = Texture::CreateFromImage(
-        Image::Load("./image/rustediron2_basecolor.png").get());
-    m_material.roughness = Texture::CreateFromImage(
-        Image::Load("./image/rustediron2_roughness.png").get());
-    m_material.metallic = Texture::CreateFromImage(
-        Image::Load("./image/rustediron2_metallic.png").get());
-    m_material.normal = Texture::CreateFromImage(
-        Image::Load("./image/rustediron2_normal.png").get());
+    m_pbrProgram = Program::Create("./shader/pbr.vs", "./shader/pbr.fs");
+    // m_pbrProgram = Program::Create("./shader/pbr_texture.vs", "./shader/pbr_texture.fs");
+    // m_material.albedo = Texture::CreateFromImage(
+    //     Image::Load("./image/rustediron2_basecolor.png").get());
+    // m_material.roughness = Texture::CreateFromImage(
+    //     Image::Load("./image/rustediron2_roughness.png").get());
+    // m_material.metallic = Texture::CreateFromImage(
+    //     Image::Load("./image/rustediron2_metallic.png").get());
+    // m_material.normal = Texture::CreateFromImage(
+    //     Image::Load("./image/rustediron2_normal.png").get());
 
     m_lights.push_back({glm::vec3(5.0f, 5.0f, 6.0f), glm::vec3(40.0f, 40.0f, 40.0f)});
     m_lights.push_back({glm::vec3(-4.0f, 5.0f, 7.0f), glm::vec3(40.0f, 40.0f, 40.0f)});
     m_lights.push_back({glm::vec3(-4.0f, -6.0f, 8.0f), glm::vec3(40.0f, 40.0f, 40.0f)});
     m_lights.push_back({glm::vec3(5.0f, -6.0f, 9.0f), glm::vec3(40.0f, 40.0f, 40.0f)});
+
+    m_hdrMap = Texture::CreateFromImage(Image::Load("./image/modern_bathroom_2k.hdr").get());
+    m_sphericalMapProgram = Program::Create("./shader/spherical_map.vs", "./shader/spherical_map.fs");
 
     return true;
 }
@@ -63,13 +65,13 @@ void Context::Render()
             ImGui::DragFloat3("light.pos", glm::value_ptr(m_lights[lightIndex].position), 0.01f);
             ImGui::DragFloat3("light.color", glm::value_ptr(m_lights[lightIndex].color), 0.1f);
         }
-        // if (ImGui::CollapsingHeader("material"))
-        // {
-        //     ImGui::ColorEdit3("mat.albedo", glm::value_ptr(m_material.albedo));
-        //     ImGui::SliderFloat("mat.roughness", &m_material.roughness, 0.0f, 1.0f);
-        //     ImGui::SliderFloat("mat.metallic", &m_material.metallic, 0.0f, 1.0f);
-        //     ImGui::SliderFloat("mat.ao", &m_material.ao, 0.0f, 1.0f);
-        // }
+        if (ImGui::CollapsingHeader("material"))
+        {
+            ImGui::ColorEdit3("mat.albedo", glm::value_ptr(m_material.albedo));
+            ImGui::SliderFloat("mat.roughness", &m_material.roughness, 0.0f, 1.0f);
+            ImGui::SliderFloat("mat.metallic", &m_material.metallic, 0.0f, 1.0f);
+            ImGui::SliderFloat("mat.ao", &m_material.ao, 0.0f, 1.0f);
+        }
     }
     ImGui::End();
 
@@ -90,21 +92,21 @@ void Context::Render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m_pbrProgram->Use();
     m_pbrProgram->SetUniform("viewPos", m_cameraPos);
-    // m_pbrProgram->SetUniform("material.albedo", m_material.albedo);
+    m_pbrProgram->SetUniform("material.albedo", m_material.albedo);
     m_pbrProgram->SetUniform("material.ao", m_material.ao);
-    m_pbrProgram->SetUniform("material.albedo", 0);
-    m_pbrProgram->SetUniform("material.roughness", 1);
-    m_pbrProgram->SetUniform("material.metallic", 2);
-    m_pbrProgram->SetUniform("material.normal", 3);
-    glActiveTexture(GL_TEXTURE0);
-    m_material.albedo->Bind();
-    glActiveTexture(GL_TEXTURE1);
-    m_material.roughness->Bind();
-    glActiveTexture(GL_TEXTURE2);
-    m_material.metallic->Bind();
-    glActiveTexture(GL_TEXTURE3);
-    m_material.normal->Bind();
-    glActiveTexture(GL_TEXTURE0);
+    // m_pbrProgram->SetUniform("material.albedo", 0);
+    // m_pbrProgram->SetUniform("material.roughness", 1);
+    // m_pbrProgram->SetUniform("material.metallic", 2);
+    // m_pbrProgram->SetUniform("material.normal", 3);
+    // glActiveTexture(GL_TEXTURE0);
+    // m_material.albedo->Bind();
+    // glActiveTexture(GL_TEXTURE1);
+    // m_material.roughness->Bind();
+    // glActiveTexture(GL_TEXTURE2);
+    // m_material.metallic->Bind();
+    // glActiveTexture(GL_TEXTURE3);
+    // m_material.normal->Bind();
+    // glActiveTexture(GL_TEXTURE0);
 
     for (size_t i = 0; i < m_lights.size(); i++)
     {
@@ -114,6 +116,14 @@ void Context::Render()
         m_pbrProgram->SetUniform(colorName, m_lights[i].color);
     }
     DrawScene(view, projection, m_pbrProgram.get());
+
+    m_sphericalMapProgram->Use();
+    m_sphericalMapProgram->SetUniform("transform",
+                                      projection * view *
+                                          glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 2.0f)));
+    m_sphericalMapProgram->SetUniform("tex", 0);
+    m_hdrMap->Bind();
+    m_box->Draw(m_sphericalMapProgram.get());
 }
 
 void Context::DrawScene(const glm::mat4 &view,
@@ -135,10 +145,10 @@ void Context::DrawScene(const glm::mat4 &view,
             auto transform = projection * view * modelTransform;
             program->SetUniform("transform", transform);
             program->SetUniform("modelTransform", modelTransform);
-            // program->SetUniform("material.roughness",
-            //                     (float)(i + 1) / (float)sphereCount);
-            // program->SetUniform("material.metallic",
-            //                     (float)(j + 1) / (float)sphereCount);
+            program->SetUniform("material.roughness",
+                                (float)(i + 1) / (float)sphereCount);
+            program->SetUniform("material.metallic",
+                                (float)(j + 1) / (float)sphereCount);
             m_sphere->Draw(program);
         }
     }
