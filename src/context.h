@@ -35,6 +35,8 @@ private:
 
     MeshUPtr m_box;
     MeshUPtr m_plane;
+    MeshUPtr m_sphere;
+
 
     // screen size
     int m_width{640};
