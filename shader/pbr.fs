@@ -24,6 +24,9 @@ struct Material
 };
 uniform Material material;
 
+uniform samplerCube irradianceMap;
+uniform int useIrradiance;
+
 const float PI = 3.14159265359;
 
 float DistributionGGX(vec3 normal, vec3 halfDir, float roughness) 
@@ -62,6 +65,11 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) 
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
 void main() 
 {
     vec3 albedo = material.albedo;
@@ -82,30 +90,39 @@ void main()
         // calculate per-light radiance
         vec3 lightDir = normalize(lights[i].position - fragPos);
         vec3 halfDir = normalize(viewDir + lightDir);
-    
+
         float dist = length(lights[i].position - fragPos);
         float attenuation = 1.0 / (dist * dist);
         vec3 radiance = lights[i].color * attenuation;
-    
+
         // Cook-Torrance BRDF
         float ndf = DistributionGGX(fragNormal, halfDir, roughness);
         float geometry = GeometrySmith(fragNormal, viewDir, lightDir, roughness);
         vec3 fresnel = FresnelSchlick(max(dot(halfDir, viewDir), 0.0), F0);
-    
+
         vec3 kS = fresnel;
         vec3 kD = 1.0 - kS;
         kD *= (1.0 - metallic);
-    
+
         float dotNL = max(dot(fragNormal, lightDir), 0.0);
         vec3 numerator = ndf * geometry * fresnel;
         float denominator = 4.0 * dotNV * dotNL;
         vec3 specular = numerator / max(denominator, 0.001);
-    
+
         // add to outgoing radiance Lo
         outRadiance += (kD * albedo / PI + specular) * radiance * dotNL;
     }   
 
     vec3 ambient = vec3(0.03) * albedo * ao;
+    if (useIrradiance == 1) 
+    {
+        vec3 kS = FresnelSchlickRoughness(dotNV, F0, roughness);
+        vec3 kD = 1.0 - kS;
+        vec3 irradiance = texture(irradianceMap, fragNormal).rgb;
+        vec3 diffuse = irradiance * albedo;
+        ambient = (kD * diffuse) * ao;
+    }
+
     vec3 color = ambient + outRadiance;
 
     // Reinhard tone mapping + gamma correction
