@@ -74,6 +74,7 @@ void main()
         float NdotL = max(dot(N, L), 0.0);
         if(NdotL > 0.0) 
         {
+            //roughness에 따라 mipmap으로부터 샘플링
             float D = DistributionGGX(N, H, roughness);
             float NdotH = max(dot(N, H), 0.0);
             float HdotV = max(dot(H, V), 0.0);
@@ -82,7 +83,7 @@ void main()
             float saTexel = 4.0 * PI / (6.0 * resolution * resolution);
             float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
             float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
-            
+
             prefilteredColor += textureLod(cubeMap, L, mipLevel).rgb * NdotL;
             totalWeight += NdotL;
         }
